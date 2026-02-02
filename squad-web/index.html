@@ -1,0 +1,2420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Squad Bot</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #0a0b0f;
+            --bg-surface: #12131a;
+            --bg-elevated: #1a1b25;
+            --bg-hover: #222330;
+            --border: #2a2b3a;
+            --border-active: #4a4b6a;
+            --text-primary: #e8e9f0;
+            --text-secondary: #8b8ca0;
+            --text-muted: #5a5b70;
+            --accent-blue: #5b8af5;
+            --accent-green: #4ade80;
+            --accent-amber: #fbbf24;
+            --accent-red: #f87171;
+            --accent-purple: #a78bfa;
+            --accent-cyan: #22d3ee;
+            --model-claude: #d4a574;
+            --model-chatgpt: #74d4a5;
+            --model-gemini: #74a5d4;
+            --model-web: #d474a5;
+            --glow-blue: rgba(91, 138, 245, 0.15);
+            --glow-green: rgba(74, 222, 128, 0.15);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ── Layout ─────────────────────────────────────────── */
+        .app {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            grid-template-rows: 60px 1fr;
+            height: 100vh;
+        }
+
+        .app.auth-mode {
+            grid-template-columns: 1fr;
+            grid-template-rows: 1fr;
+        }
+
+        /* ── Auth Screen ────────────────────────────────────── */
+        .auth-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: var(--bg-deep);
+        }
+
+        .auth-screen.active {
+            display: flex;
+        }
+
+        .auth-container {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .auth-logo {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 28px;
+            text-align: center;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .auth-subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            font-size: 14px;
+        }
+
+        .auth-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 24px;
+            background: var(--bg-elevated);
+            padding: 4px;
+            border-radius: 10px;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.15s;
+        }
+
+        .auth-tab.active {
+            background: var(--bg-surface);
+            color: var(--text-primary);
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+
+        .auth-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            outline: none;
+            margin-bottom: 12px;
+            transition: border-color 0.15s;
+        }
+
+        .auth-input:focus {
+            border-color: var(--accent-blue);
+        }
+
+        .auth-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: opacity 0.15s;
+            margin-top: 8px;
+        }
+
+        .auth-btn:hover {
+            opacity: 0.9;
+        }
+
+        .auth-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .auth-error {
+            background: rgba(248, 113, 113, 0.1);
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .auth-error.show {
+            display: block;
+        }
+
+        .auth-success {
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid var(--accent-green);
+            color: var(--accent-green);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .auth-success.show {
+            display: block;
+        }
+
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 24px 0;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .auth-divider::before,
+        .auth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .oauth-section {
+            margin-bottom: 24px;
+        }
+
+        .google-btn {
+            width: 100%;
+            padding: 12px 16px;
+            background: #fff;
+            border: 1px solid #dadce0;
+            border-radius: 10px;
+            color: #3c4043;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            transition: all 0.15s;
+        }
+
+        .google-btn:hover {
+            background: #f8f9fa;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .google-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .google-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .user-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .key-display {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            word-break: break-all;
+            margin-bottom: 12px;
+        }
+
+        .key-display-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .copy-btn {
+            padding: 8px 16px;
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .copy-btn:hover {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        /* ── Header ─────────────────────────────────────────── */
+        .header {
+            grid-column: 1 / -1;
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            gap: 16px;
+        }
+
+        .header-logo {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-divider {
+            width: 1px;
+            height: 24px;
+            background: var(--border);
+        }
+
+        .squad-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .squad-selector select {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .header-status {
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .header-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 12px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 13px;
+        }
+
+        .user-badge .role {
+            font-size: 10px;
+            padding: 2px 6px;
+            background: var(--accent-purple);
+            color: white;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .admin-btn {
+            padding: 6px 12px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .admin-btn:hover {
+            border-color: var(--accent-amber);
+            color: var(--accent-amber);
+        }
+
+        .logout-btn {
+            padding: 6px 12px;
+            background: transparent;
+            border: 1px solid var(--accent-red);
+            border-radius: 6px;
+            color: var(--accent-red);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(248, 113, 113, 0.1);
+        }
+
+        .context-version {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-muted);
+            background: var(--bg-elevated);
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        /* ── Members Panel ──────────────────────────────────── */
+        .members-panel {
+            background: var(--bg-surface);
+            border-right: 1px solid var(--border);
+            padding: 20px 16px;
+            overflow-y: auto;
+        }
+
+        .panel-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        .member-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            transition: background 0.15s;
+        }
+
+        .member-card:hover { background: var(--bg-hover); }
+
+        .member-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .member-info { flex: 1; min-width: 0; }
+
+        .member-name {
+            font-weight: 600;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .member-model {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .model-claude .member-avatar { background: rgba(212, 165, 116, 0.15); color: var(--model-claude); }
+        .model-chatgpt .member-avatar { background: rgba(116, 212, 165, 0.15); color: var(--model-chatgpt); }
+        .model-gemini .member-avatar { background: rgba(116, 165, 212, 0.15); color: var(--model-gemini); }
+        .model-web .member-avatar { background: rgba(212, 116, 165, 0.15); color: var(--model-web); }
+        .model-unknown .member-avatar { background: rgba(139, 140, 160, 0.15); color: var(--text-secondary); }
+
+        /* ── Join Section ───────────────────────────────────── */
+        .join-section {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .join-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            outline: none;
+            margin-bottom: 8px;
+            transition: border-color 0.15s;
+        }
+
+        .join-input:focus { border-color: var(--accent-blue); }
+
+        .join-btn {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+
+        .join-btn:hover { opacity: 0.9; }
+        .join-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* ── Chat Area ──────────────────────────────────────── */
+        .chat-area {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-deep);
+        }
+
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 24px;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .msg-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 12px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .msg-body { flex: 1; min-width: 0; }
+
+        .msg-header {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .msg-sender {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .msg-type-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .badge-human { background: rgba(91, 138, 245, 0.15); color: var(--accent-blue); }
+        .badge-agent { background: rgba(167, 139, 250, 0.15); color: var(--accent-purple); }
+        .badge-orchestrator { background: rgba(74, 222, 128, 0.15); color: var(--accent-green); }
+        .badge-system { background: rgba(139, 140, 160, 0.1); color: var(--text-muted); }
+
+        .msg-time {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .msg-content {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-primary);
+            word-wrap: break-word;
+        }
+
+        .msg-content strong { font-weight: 600; }
+
+        /* System messages */
+        .message.system-message {
+            justify-content: center;
+            gap: 0;
+        }
+
+        .message.system-message .msg-content {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-align: center;
+            font-style: italic;
+        }
+
+        /* Orchestrator messages */
+        .message.orchestrator-message .msg-content {
+            background: var(--bg-elevated);
+            padding: 12px 16px;
+            border-radius: 8px;
+            border-left: 3px solid var(--accent-green);
+        }
+
+        /* ── Chat Input ─────────────────────────────────────── */
+        .chat-input-area {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border);
+            background: var(--bg-surface);
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            outline: none;
+            resize: none;
+            min-height: 44px;
+            max-height: 120px;
+            transition: border-color 0.15s;
+        }
+
+        .chat-input:focus { border-color: var(--accent-blue); }
+        .chat-input::placeholder { color: var(--text-muted); }
+        .chat-input:disabled { opacity: 0.5; }
+
+        .send-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background: var(--accent-blue);
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: opacity 0.15s;
+        }
+
+        .send-btn:hover { opacity: 0.9; }
+        .send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        /* ── Context Panel ──────────────────────────────────── */
+        .context-panel {
+            background: var(--bg-surface);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .context-section {
+            padding: 20px 16px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .context-entry {
+            padding: 12px;
+            background: var(--bg-elevated);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 3px solid var(--accent-green);
+        }
+
+        .context-entry-version {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--accent-green);
+            margin-bottom: 4px;
+        }
+
+        .context-entry-content {
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--text-primary);
+        }
+
+        .context-entry-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 32px 16px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        /* ── Pending Commits ────────────────────────────────── */
+        .commits-section {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .commit-card {
+            padding: 12px;
+            background: var(--bg-elevated);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 3px solid var(--accent-amber);
+        }
+
+        .commit-content {
+            font-size: 13px;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        .commit-proposer {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .commit-votes {
+            display: flex;
+            gap: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+
+        .vote-count { color: var(--text-secondary); }
+        .vote-count.approve { color: var(--accent-green); }
+        .vote-count.reject { color: var(--accent-red); }
+
+        .vote-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .vote-btn {
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg-surface);
+            color: var(--text-secondary);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .vote-btn.approve:hover { border-color: var(--accent-green); color: var(--accent-green); background: var(--glow-green); }
+        .vote-btn.reject:hover { border-color: var(--accent-red); color: var(--accent-red); }
+
+        /* ── Admin Modal ─────────────────────────────────────── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-title {
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .admin-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+            background: var(--bg-elevated);
+            padding: 4px;
+            border-radius: 10px;
+        }
+
+        .admin-tab {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.15s;
+        }
+
+        .admin-tab.active {
+            background: var(--bg-surface);
+            color: var(--text-primary);
+        }
+
+        .admin-section {
+            display: none;
+        }
+
+        .admin-section.active {
+            display: block;
+        }
+
+        .admin-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .admin-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: var(--bg-elevated);
+            border-radius: 8px;
+        }
+
+        .admin-item-info {
+            flex: 1;
+        }
+
+        .admin-item-title {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+
+        .admin-item-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .admin-item-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .admin-action-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg-surface);
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .admin-action-btn.danger {
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .admin-action-btn.danger:hover {
+            background: rgba(248, 113, 113, 0.1);
+        }
+
+        .admin-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: var(--bg-elevated);
+            border-radius: 8px;
+        }
+
+        .admin-form-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .admin-form input {
+            flex: 1;
+            padding: 10px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 13px;
+        }
+
+        .admin-form button {
+            padding: 10px 20px;
+            background: var(--accent-blue);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        /* ── Connection status ───────────────────────────────── */
+        .connection-status {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 6px;
+        }
+
+        .connected { color: var(--accent-green); background: rgba(74, 222, 128, 0.1); }
+        .disconnected { color: var(--accent-red); background: rgba(248, 113, 113, 0.1); }
+
+        /* ── Scrollbar ──────────────────────────────────────── */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border-active); }
+
+        /* ── Responsive ─────────────────────────────────────── */
+        @media (max-width: 1024px) {
+            .app { grid-template-columns: 1fr; }
+            .members-panel, .context-panel { display: none; }
+        }
+
+        /* ── Files Panel ───────────────────────────────────── */
+        .panel-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 16px;
+            padding: 0 16px;
+        }
+
+        .panel-tab {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.15s;
+        }
+
+        .panel-tab.active {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+        }
+
+        .files-section {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .files-section.active {
+            display: flex;
+        }
+
+        .files-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 16px;
+        }
+
+        .file-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--bg-elevated);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .file-card:hover {
+            background: var(--bg-hover);
+        }
+
+        .file-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            background: rgba(91, 138, 245, 0.15);
+            color: var(--accent-blue);
+        }
+
+        .file-icon.image { background: rgba(74, 222, 128, 0.15); color: var(--accent-green); }
+        .file-icon.code { background: rgba(167, 139, 250, 0.15); color: var(--accent-purple); }
+        .file-icon.doc { background: rgba(251, 191, 36, 0.15); color: var(--accent-amber); }
+
+        .file-info { flex: 1; min-width: 0; }
+
+        .file-name {
+            font-weight: 600;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .file-version {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            padding: 2px 6px;
+            background: var(--bg-surface);
+            border-radius: 4px;
+            color: var(--text-secondary);
+        }
+
+        .files-upload {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--accent-blue);
+            background: var(--glow-blue);
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--accent-green);
+            background: var(--glow-green);
+        }
+
+        .upload-zone-text {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .upload-zone-text strong {
+            color: var(--accent-blue);
+        }
+
+        /* File Preview Modal */
+        .file-preview-modal .modal {
+            max-width: 800px;
+        }
+
+        .file-preview-content {
+            max-height: 400px;
+            overflow: auto;
+            background: var(--bg-elevated);
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .file-preview-image {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+        }
+
+        .file-preview-meta {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .file-preview-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        /* ── Utility ────────────────────────────────────────── */
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <!-- Auth Screen -->
+    <div class="auth-screen" id="authScreen">
+        <div class="auth-container">
+            <div class="auth-logo">SQUAD BOT</div>
+            <div class="auth-subtitle">Secure multi-agent collaboration</div>
+
+            <div class="auth-error" id="authError"></div>
+            <div class="auth-success" id="authSuccess"></div>
+
+            <!-- Google OAuth Button -->
+            <div class="oauth-section" id="oauthSection" style="display: none;">
+                <button class="google-btn" onclick="loginWithGoogle()">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Continue with Google
+                </button>
+                <div class="auth-divider">or use enrollment key</div>
+            </div>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchAuthTab('login')">Login</button>
+                <button class="auth-tab" onclick="switchAuthTab('invite')">Join with Invite</button>
+                <button class="auth-tab" onclick="switchAuthTab('create')">Create Squad</button>
+            </div>
+
+            <!-- Login Form -->
+            <div class="auth-form active" id="loginForm">
+                <input class="auth-input" id="enrollmentKeyInput" type="password" placeholder="Enrollment Key" />
+                <button class="auth-btn" onclick="login()">Login</button>
+            </div>
+
+            <!-- Invite Form -->
+            <div class="auth-form" id="inviteForm">
+                <input class="auth-input" id="inviteCode" placeholder="Invite Code (e.g., ABC123XY)" />
+                <input class="auth-input" id="inviteName" placeholder="Your Name" />
+                <button class="auth-btn" onclick="redeemInvite()">Join Squad</button>
+            </div>
+
+            <!-- Create Squad Form -->
+            <div class="auth-form" id="createForm">
+                <input class="auth-input" id="newSquadName" placeholder="Squad Name" />
+                <input class="auth-input" id="creatorName" placeholder="Your Name" />
+                <button class="auth-btn" onclick="createSquad()">Create Squad</button>
+            </div>
+
+            <!-- Key Display (shown after creating/joining) -->
+            <div class="auth-form" id="keyDisplay">
+                <div class="key-display-label">Your Enrollment Key (save this!)</div>
+                <div class="key-display" id="displayedKey"></div>
+                <button class="copy-btn" onclick="copyKey()">Copy to Clipboard</button>
+                <div class="auth-divider">or</div>
+                <button class="auth-btn" onclick="continueWithKey()">Continue to Squad</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="app" id="mainApp" style="display: none;">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-logo">SQUAD BOT</div>
+            <div class="header-divider"></div>
+            <div class="squad-selector">
+                <select id="squadSelect" onchange="switchSquad()"></select>
+            </div>
+            <div class="header-status">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">connecting...</span>
+            </div>
+            <div class="header-right">
+                <div class="user-badge">
+                    <span id="userName">-</span>
+                    <span class="role hidden" id="userRole">ADMIN</span>
+                </div>
+                <button class="admin-btn hidden" id="adminBtn" onclick="openAdminModal()">Admin</button>
+                <span class="context-version" id="contextVersion">ctx v0</span>
+                <span class="connection-status disconnected" id="connStatus">disconnected</span>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </header>
+
+        <!-- Members Panel -->
+        <aside class="members-panel">
+            <div class="panel-title">Squad Members</div>
+            <div id="membersList"></div>
+
+            <div class="join-section" id="joinSection">
+                <div class="panel-title">Join as Human</div>
+                <input class="join-input" id="joinName" placeholder="Your name" />
+                <button class="join-btn" id="joinBtn" onclick="joinSquad()">Join Chat</button>
+            </div>
+        </aside>
+
+        <!-- Chat Area -->
+        <main class="chat-area">
+            <div class="messages-container" id="messagesContainer"></div>
+            <div class="chat-input-area">
+                <div class="chat-input-wrapper">
+                    <textarea class="chat-input" id="chatInput"
+                        placeholder="Type a message..."
+                        onkeydown="handleKeyDown(event)"
+                        rows="1"></textarea>
+                    <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Context Panel -->
+        <aside class="context-panel">
+            <div class="panel-tabs">
+                <button class="panel-tab active" onclick="switchContextTab('context')">Context</button>
+                <button class="panel-tab" onclick="switchContextTab('files')">Files</button>
+            </div>
+
+            <!-- Context Tab -->
+            <div class="context-section active" id="contextTab">
+                <div style="padding: 0 16px;">
+                    <div class="panel-title">Canonical Context</div>
+                    <div id="contextEntries">
+                        <div class="empty-state">No context committed yet.<br>Propose commits as the squad reaches decisions.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Files Tab -->
+            <div class="files-section" id="filesTab">
+                <div class="files-list" id="filesList">
+                    <div class="empty-state">No files shared yet.</div>
+                </div>
+                <div class="files-upload">
+                    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                        <div class="upload-zone-text">
+                            <strong>Click to upload</strong> or drag & drop<br>
+                            Max 10 MB per file
+                        </div>
+                    </div>
+                    <input type="file" id="fileInput" style="display: none;" onchange="handleFileUpload(event)">
+                </div>
+            </div>
+
+            <div class="commits-section">
+                <div class="panel-title">Pending Commits</div>
+                <div id="pendingCommits">
+                    <div class="empty-state">No pending proposals.</div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- File Preview Modal -->
+    <div class="modal-overlay file-preview-modal" id="filePreviewModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title" id="previewFileName">File Preview</div>
+                <button class="modal-close" onclick="closeFilePreview()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="file-preview-meta">
+                    <span id="previewFileSize">-</span>
+                    <span id="previewFileVersion">-</span>
+                    <span id="previewFileUploader">-</span>
+                </div>
+                <div id="filePreviewContent"></div>
+                <div class="file-preview-actions">
+                    <button class="admin-action-btn" onclick="downloadCurrentFile()">Download</button>
+                    <select id="versionSelect" onchange="loadFileVersion()" style="padding: 6px 12px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 12px;"></select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Modal -->
+    <div class="modal-overlay" id="adminModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Admin Panel</div>
+                <button class="modal-close" onclick="closeAdminModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="admin-tabs">
+                    <button class="admin-tab active" onclick="switchAdminTab('invites')">Invites</button>
+                    <button class="admin-tab" onclick="switchAdminTab('members')">Members</button>
+                    <button class="admin-tab" onclick="switchAdminTab('sessions')">Sessions</button>
+                    <button class="admin-tab" onclick="switchAdminTab('audit')">Audit Log</button>
+                </div>
+
+                <!-- Invites Section -->
+                <div class="admin-section active" id="adminInvites">
+                    <div class="admin-form">
+                        <div class="admin-form-row">
+                            <input id="newInviteTarget" placeholder="Target name (optional)" />
+                            <input id="newInviteUses" type="number" value="1" min="1" placeholder="Max uses" style="width: 100px;" />
+                        </div>
+                        <button onclick="createInvite()">Create Invite</button>
+                    </div>
+                    <div class="admin-list" id="invitesList"></div>
+                </div>
+
+                <!-- Members Section -->
+                <div class="admin-section" id="adminMembers">
+                    <div class="admin-list" id="adminMembersList"></div>
+                </div>
+
+                <!-- Sessions Section -->
+                <div class="admin-section" id="adminSessions">
+                    <div class="admin-list" id="sessionsList"></div>
+                </div>
+
+                <!-- Audit Section -->
+                <div class="admin-section" id="adminAudit">
+                    <div class="admin-list" id="auditList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════════════════════════
+        // Squad Bot Client - Multi-Squad + Auth
+        // ═══════════════════════════════════════════════════════════════
+
+        const state = {
+            ws: null,
+            sessionToken: null,
+            squadId: 'default',
+            memberId: null,
+            memberName: null,
+            isAdmin: false,
+            authRequired: true,
+            myName: null,
+            members: [],
+            messages: [],
+            context: { version: 0, entries: [] },
+            pendingCommits: [],
+            connected: false,
+            squads: [],
+            files: [],
+            currentFile: null,
+            oauthConfigured: false,
+            user: null,  // OAuth user info
+        };
+
+        // ── Auth Functions ─────────────────────────────────────────
+
+        function switchAuthTab(tab) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+            document.querySelector(`.auth-tab:nth-child(${tab === 'login' ? 1 : tab === 'invite' ? 2 : 3})`).classList.add('active');
+            document.getElementById(tab === 'login' ? 'loginForm' : tab === 'invite' ? 'inviteForm' : 'createForm').classList.add('active');
+            hideAuthMessages();
+        }
+
+        function hideAuthMessages() {
+            document.getElementById('authError').classList.remove('show');
+            document.getElementById('authSuccess').classList.remove('show');
+        }
+
+        function showAuthError(msg) {
+            const el = document.getElementById('authError');
+            el.textContent = msg;
+            el.classList.add('show');
+        }
+
+        function showAuthSuccess(msg) {
+            const el = document.getElementById('authSuccess');
+            el.textContent = msg;
+            el.classList.add('show');
+        }
+
+        async function login() {
+            const key = document.getElementById('enrollmentKeyInput').value.trim();
+            if (!key) return;
+
+            try {
+                const res = await fetch('/auth/session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enrollment_key: key })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    showAuthError(err.detail || 'Login failed');
+                    return;
+                }
+
+                const data = await res.json();
+                state.sessionToken = data.session_token;
+                state.squadId = data.squad_id;
+                state.memberId = data.member_id;
+                state.memberName = data.member_name;
+                state.isAdmin = data.is_admin;
+                state.myName = data.member_name;
+
+                localStorage.setItem('squadbot_session', JSON.stringify({
+                    token: data.session_token,
+                    squadId: data.squad_id,
+                    memberName: data.member_name,
+                    isAdmin: data.is_admin
+                }));
+
+                showMainApp();
+            } catch (e) {
+                showAuthError('Connection error');
+            }
+        }
+
+        async function redeemInvite() {
+            const code = document.getElementById('inviteCode').value.trim();
+            const name = document.getElementById('inviteName').value.trim();
+            if (!code || !name) return;
+
+            try {
+                const res = await fetch('/invite/redeem', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, name, model: 'web' })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    showAuthError(err.detail || 'Failed to redeem invite');
+                    return;
+                }
+
+                const data = await res.json();
+                showKeyDisplay(data.enrollment_key, data.squad_id, name);
+            } catch (e) {
+                showAuthError('Connection error');
+            }
+        }
+
+        async function createSquad() {
+            const squadName = document.getElementById('newSquadName').value.trim();
+            const creatorName = document.getElementById('creatorName').value.trim();
+            if (!squadName || !creatorName) return;
+
+            try {
+                const res = await fetch('/squads', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: squadName, creator_name: creatorName, creator_model: 'web' })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    showAuthError(err.detail || 'Failed to create squad');
+                    return;
+                }
+
+                const data = await res.json();
+                showKeyDisplay(data.enrollment_key, data.squad.id, creatorName);
+            } catch (e) {
+                showAuthError('Connection error');
+            }
+        }
+
+        function showKeyDisplay(key, squadId, name) {
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+            document.getElementById('keyDisplay').classList.add('active');
+            document.getElementById('displayedKey').textContent = key;
+            state.pendingKey = key;
+            state.pendingSquadId = squadId;
+            state.pendingName = name;
+            showAuthSuccess('Squad joined! Save your enrollment key below.');
+        }
+
+        function copyKey() {
+            navigator.clipboard.writeText(state.pendingKey);
+            document.querySelector('.copy-btn').textContent = 'Copied!';
+            setTimeout(() => {
+                document.querySelector('.copy-btn').textContent = 'Copy to Clipboard';
+            }, 2000);
+        }
+
+        async function continueWithKey() {
+            document.getElementById('enrollmentKeyInput').value = state.pendingKey;
+            await login();
+        }
+
+        async function logout() {
+            // Try OAuth logout first (clears cookie)
+            if (state.user) {
+                try {
+                    await fetch('/auth/google/logout', { method: 'POST' });
+                } catch (e) {}
+            }
+
+            // Also try token-based logout
+            if (state.sessionToken) {
+                try {
+                    await fetch('/auth/logout', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${state.sessionToken}` }
+                    });
+                } catch (e) {}
+            }
+
+            localStorage.removeItem('squadbot_session');
+            state.sessionToken = null;
+            state.myName = null;
+            state.user = null;
+            location.reload();
+        }
+
+        function checkExistingSession() {
+            const saved = localStorage.getItem('squadbot_session');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    state.sessionToken = data.token;
+                    state.squadId = data.squadId;
+                    state.memberName = data.memberName;
+                    state.isAdmin = data.isAdmin;
+                    state.myName = data.memberName;
+                    return true;
+                } catch (e) {}
+            }
+            return false;
+        }
+
+        // ── OAuth Functions ─────────────────────────────────────────
+
+        async function checkAuthStatus() {
+            try {
+                const res = await fetch('/auth/status');
+                const data = await res.json();
+
+                state.oauthConfigured = data.oauth_providers?.google || false;
+
+                // Show/hide Google button based on configuration
+                if (state.oauthConfigured) {
+                    document.getElementById('oauthSection').style.display = 'block';
+                }
+
+                // If already authenticated via OAuth (cookie-based session)
+                if (data.authenticated && data.session) {
+                    state.squadId = data.session.squad_id;
+                    state.memberId = data.session.member_id;
+                    state.memberName = data.session.member_name;
+                    state.isAdmin = data.session.is_admin;
+                    state.myName = data.session.member_name;
+                    state.user = data.user;
+                    return true;
+                }
+
+                return false;
+            } catch (e) {
+                console.error('Failed to check auth status', e);
+                return false;
+            }
+        }
+
+        function loginWithGoogle() {
+            // Redirect to Google OAuth flow
+            const squadId = document.getElementById('squadSelect')?.value || state.squadId || 'default';
+            window.location.href = `/auth/google?squad_id=${squadId}`;
+        }
+
+        function checkOAuthError() {
+            // Check for error from OAuth callback
+            const urlParams = new URLSearchParams(window.location.search);
+            const error = urlParams.get('error');
+            if (error) {
+                showAuthError(decodeURIComponent(error));
+                // Clean up URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+                return true;
+            }
+            return false;
+        }
+
+        // ── Main App ─────────────────────────────────────────────────
+
+        function showMainApp() {
+            document.getElementById('authScreen').classList.remove('active');
+            document.getElementById('mainApp').style.display = 'grid';
+
+            // Update user badge - show avatar for OAuth users
+            const userBadge = document.querySelector('.user-badge');
+            if (state.user && state.user.picture) {
+                userBadge.innerHTML = `
+                    <img class="user-avatar" src="${esc(state.user.picture)}" alt="${esc(state.user.name)}" referrerpolicy="no-referrer">
+                    <span id="userName">${esc(state.memberName)}</span>
+                    <span class="role hidden" id="userRole">ADMIN</span>
+                `;
+            } else {
+                document.getElementById('userName').textContent = state.memberName;
+            }
+
+            if (state.isAdmin) {
+                document.getElementById('userRole').classList.remove('hidden');
+                document.getElementById('adminBtn').classList.remove('hidden');
+            }
+            loadSquads();
+            connect();
+        }
+
+        async function loadSquads() {
+            try {
+                const res = await fetch('/squads');
+                state.squads = await res.json();
+                const select = document.getElementById('squadSelect');
+                select.innerHTML = state.squads.map(s =>
+                    `<option value="${s.id}" ${s.id === state.squadId ? 'selected' : ''}>${s.name}</option>`
+                ).join('');
+            } catch (e) {}
+        }
+
+        function switchSquad() {
+            const newSquad = document.getElementById('squadSelect').value;
+            if (newSquad !== state.squadId) {
+                state.squadId = newSquad;
+                if (state.ws) state.ws.close();
+                connect();
+            }
+        }
+
+        // ── WebSocket Connection ────────────────────────────────────
+
+        function connect() {
+            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${location.host}/ws?squad_id=${state.squadId}`;
+
+            state.ws = new WebSocket(wsUrl);
+
+            state.ws.onopen = () => {
+                state.connected = true;
+                updateConnectionStatus(true);
+            };
+
+            state.ws.onclose = () => {
+                state.connected = false;
+                updateConnectionStatus(false);
+                setTimeout(connect, 3000);
+            };
+
+            state.ws.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+                handleEvent(msg);
+            };
+        }
+
+        function handleEvent(event) {
+            // Only handle events for current squad
+            if (event.squad_id && event.squad_id !== state.squadId) return;
+
+            switch (event.type) {
+                case 'initial_state':
+                    state.members = event.data.status.members || [];
+                    state.messages = event.data.messages || [];
+                    state.context = event.data.context || { version: 0, entries: [] };
+                    state.pendingCommits = event.data.pending_commits || [];
+                    state.authRequired = event.data.auth_required !== false;
+                    renderAll();
+                    break;
+
+                case 'new_message':
+                    state.messages.push(event.data);
+                    renderMessages();
+                    scrollToBottom();
+                    break;
+
+                case 'member_joined':
+                    if (!state.members.find(m => m.id === event.data.id)) {
+                        state.members.push(event.data);
+                    }
+                    renderMembers();
+                    break;
+
+                case 'member_left':
+                    state.members = state.members.filter(m => m.id !== event.data.id);
+                    renderMembers();
+                    break;
+
+                case 'context_updated':
+                    state.context.entries.push(event.data);
+                    state.context.version = event.data.version;
+                    renderContext();
+                    break;
+
+                case 'commit_proposed':
+                    state.pendingCommits.push({...event.data, votes: [], vote_summary: {approvals: 0, rejections: 0, abstentions: 0, total: 0}});
+                    renderPendingCommits();
+                    break;
+
+                case 'commit_resolved':
+                    state.pendingCommits = state.pendingCommits.filter(c => c.id !== event.data.commit_id);
+                    renderPendingCommits();
+                    break;
+
+                case 'vote_cast':
+                    const commit = state.pendingCommits.find(c => c.id === event.data.commit_id);
+                    if (commit) {
+                        commit.votes = commit.votes || [];
+                        commit.votes.push(event.data);
+                        const s = commit.vote_summary || {};
+                        if (event.data.choice === 'approve') s.approvals = (s.approvals||0) + 1;
+                        else if (event.data.choice === 'reject') s.rejections = (s.rejections||0) + 1;
+                        else s.abstentions = (s.abstentions||0) + 1;
+                        s.total = (s.total||0) + 1;
+                    }
+                    renderPendingCommits();
+                    break;
+
+                case 'file_uploaded':
+                case 'file_deleted':
+                    loadFiles();
+                    break;
+            }
+        }
+
+        // ── Actions ─────────────────────────────────────────────────
+
+        function joinSquad() {
+            const name = document.getElementById('joinName').value.trim();
+            if (!name) return;
+
+            state.myName = name;
+            fetch(`/api/join?squad_id=${state.squadId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, model: 'web' })
+            });
+
+            document.getElementById('chatInput').placeholder = `Message as ${name}...`;
+            document.getElementById('chatInput').focus();
+            document.getElementById('joinBtn').disabled = true;
+            document.getElementById('joinName').disabled = true;
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const content = input.value.trim();
+            if (!content || !state.myName) return;
+
+            state.ws.send(JSON.stringify({
+                action: 'send_message',
+                sender_name: state.myName,
+                content: content,
+                sender_type: 'human',
+                squad_id: state.squadId
+            }));
+
+            input.value = '';
+            input.style.height = '44px';
+        }
+
+        function handleKeyDown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function voteOnCommit(commitId, choice) {
+            if (!state.myName) return;
+            state.ws.send(JSON.stringify({
+                action: 'vote',
+                voter_name: state.myName,
+                commit_id: commitId,
+                choice: choice,
+                is_human_override: true,
+                squad_id: state.squadId
+            }));
+        }
+
+        // ── Admin Functions ─────────────────────────────────────────
+
+        function openAdminModal() {
+            document.getElementById('adminModal').classList.add('active');
+            loadAdminData();
+        }
+
+        function closeAdminModal() {
+            document.getElementById('adminModal').classList.remove('active');
+        }
+
+        function switchAdminTab(tab) {
+            document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+            document.querySelector(`.admin-tab:nth-child(${tab === 'invites' ? 1 : tab === 'members' ? 2 : tab === 'sessions' ? 3 : 4})`).classList.add('active');
+            document.getElementById(`admin${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
+            loadAdminData();
+        }
+
+        async function loadAdminData() {
+            const headers = { 'Authorization': `Bearer ${state.sessionToken}` };
+
+            try {
+                // Load invites
+                const invites = await fetch(`/api/squads/${state.squadId}/invites`, { headers }).then(r => r.json());
+                if (invites.success) {
+                    document.getElementById('invitesList').innerHTML = invites.invites.map(i => `
+                        <div class="admin-item">
+                            <div class="admin-item-info">
+                                <div class="admin-item-title">${i.code}</div>
+                                <div class="admin-item-meta">
+                                    ${i.target_name ? `For: ${i.target_name} | ` : ''}
+                                    Uses: ${i.times_used}/${i.max_uses}
+                                    ${i.is_revoked ? ' | REVOKED' : ''}
+                                </div>
+                            </div>
+                            ${!i.is_revoked ? `
+                            <div class="admin-item-actions">
+                                <button class="admin-action-btn danger" onclick="revokeInvite('${i.code}')">Revoke</button>
+                            </div>` : ''}
+                        </div>
+                    `).join('') || '<div class="empty-state">No invites yet</div>';
+                }
+
+                // Load sessions
+                const sessions = await fetch(`/api/squads/${state.squadId}/sessions`, { headers }).then(r => r.json());
+                if (sessions.success) {
+                    document.getElementById('sessionsList').innerHTML = sessions.sessions.map(s => `
+                        <div class="admin-item">
+                            <div class="admin-item-info">
+                                <div class="admin-item-title">${s.member_name}</div>
+                                <div class="admin-item-meta">
+                                    IP: ${s.ip_address || 'unknown'} | Created: ${new Date(s.created_at).toLocaleString()}
+                                </div>
+                            </div>
+                            <div class="admin-item-actions">
+                                <button class="admin-action-btn danger" onclick="terminateSession('${s.id}')">Terminate</button>
+                            </div>
+                        </div>
+                    `).join('') || '<div class="empty-state">No active sessions</div>';
+                }
+
+                // Load members for admin
+                document.getElementById('adminMembersList').innerHTML = state.members.map(m => `
+                    <div class="admin-item">
+                        <div class="admin-item-info">
+                            <div class="admin-item-title">${m.name}</div>
+                            <div class="admin-item-meta">Model: ${m.model}</div>
+                        </div>
+                        <div class="admin-item-actions">
+                            <button class="admin-action-btn" onclick="rotateKey('${m.name}')">Rotate Key</button>
+                            <button class="admin-action-btn danger" onclick="kickMember('${m.name}')">Kick</button>
+                        </div>
+                    </div>
+                `).join('') || '<div class="empty-state">No members</div>';
+
+                // Load audit log
+                const audit = await fetch(`/api/squads/${state.squadId}/audit?limit=20`, { headers }).then(r => r.json());
+                if (audit.success) {
+                    document.getElementById('auditList').innerHTML = audit.entries.map(e => `
+                        <div class="admin-item">
+                            <div class="admin-item-info">
+                                <div class="admin-item-title">${e.event_type}</div>
+                                <div class="admin-item-meta">
+                                    ${new Date(e.timestamp).toLocaleString()}
+                                    ${e.ip_address ? ` | IP: ${e.ip_address}` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('') || '<div class="empty-state">No audit entries</div>';
+                }
+            } catch (e) {
+                console.error('Failed to load admin data', e);
+            }
+        }
+
+        async function createInvite() {
+            const targetName = document.getElementById('newInviteTarget').value.trim() || null;
+            const maxUses = parseInt(document.getElementById('newInviteUses').value) || 1;
+
+            const res = await fetch(`/api/squads/${state.squadId}/invites`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${state.sessionToken}`
+                },
+                body: JSON.stringify({ target_name: targetName, max_uses: maxUses })
+            });
+
+            if (res.ok) {
+                document.getElementById('newInviteTarget').value = '';
+                document.getElementById('newInviteUses').value = '1';
+                loadAdminData();
+            }
+        }
+
+        async function revokeInvite(code) {
+            await fetch(`/api/squads/${state.squadId}/invites/${code}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${state.sessionToken}` }
+            });
+            loadAdminData();
+        }
+
+        async function kickMember(name) {
+            if (!confirm(`Remove ${name} from the squad?`)) return;
+            await fetch(`/api/squads/${state.squadId}/members/${encodeURIComponent(name)}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${state.sessionToken}` }
+            });
+            loadAdminData();
+        }
+
+        async function rotateKey(name) {
+            const res = await fetch(`/api/squads/${state.squadId}/members/${encodeURIComponent(name)}/rotate-key`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${state.sessionToken}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`New key for ${name}:\n\n${data.enrollment_key}\n\nShare this securely with them.`);
+            }
+        }
+
+        async function terminateSession(sessionId) {
+            await fetch(`/api/squads/${state.squadId}/sessions/${sessionId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${state.sessionToken}` }
+            });
+            loadAdminData();
+        }
+
+        // ── Rendering ───────────────────────────────────────────────
+
+        function renderAll() {
+            renderMembers();
+            renderMessages();
+            renderContext();
+            renderPendingCommits();
+            loadFiles();
+            scrollToBottom();
+        }
+
+        // ── File Functions ─────────────────────────────────────────
+
+        function switchContextTab(tab) {
+            document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.context-section, .files-section').forEach(s => s.classList.remove('active'));
+            document.querySelector(`.panel-tab:nth-child(${tab === 'context' ? 1 : 2})`).classList.add('active');
+            document.getElementById(tab === 'context' ? 'contextTab' : 'filesTab').classList.add('active');
+            if (tab === 'files') loadFiles();
+        }
+
+        async function loadFiles() {
+            try {
+                const res = await fetch(`/api/files?squad_id=${state.squadId}`);
+                const data = await res.json();
+                if (data.success) {
+                    state.files = data.files;
+                    renderFiles();
+                }
+            } catch (e) {
+                console.error('Failed to load files', e);
+            }
+        }
+
+        function getFileIcon(mimeType, filename) {
+            if (mimeType.startsWith('image/')) return { icon: '', cls: 'image' };
+            if (mimeType.includes('javascript') || mimeType.includes('python') ||
+                mimeType.includes('json') || filename.endsWith('.py') ||
+                filename.endsWith('.js') || filename.endsWith('.ts') ||
+                filename.endsWith('.sql')) return { icon: '', cls: 'code' };
+            if (mimeType.includes('markdown') || mimeType.includes('text')) return { icon: '', cls: 'doc' };
+            return { icon: '', cls: '' };
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function renderFiles() {
+            const el = document.getElementById('filesList');
+            if (!state.files.length) {
+                el.innerHTML = '<div class="empty-state">No files shared yet.</div>';
+                return;
+            }
+
+            el.innerHTML = state.files.map(f => {
+                const { icon, cls } = getFileIcon(f.mime_type, f.filename);
+                const fullPath = f.path ? f.path + f.filename : f.filename;
+                return `<div class="file-card" onclick="previewFile('${esc(f.filename)}', '${esc(f.path || '')}')">
+                    <div class="file-icon ${cls}">${icon || f.filename.slice(-3).toUpperCase()}</div>
+                    <div class="file-info">
+                        <div class="file-name">${esc(fullPath)}</div>
+                        <div class="file-meta">${formatFileSize(f.size_bytes)} • by ${esc(f.uploaded_by_name)}</div>
+                    </div>
+                    <span class="file-version">v${f.current_version}</span>
+                </div>`;
+            }).join('');
+        }
+
+        async function previewFile(filename, path) {
+            try {
+                const res = await fetch(`/api/files/${encodeURIComponent(filename)}?squad_id=${state.squadId}&path=${encodeURIComponent(path)}`);
+                const data = await res.json();
+                if (!data.success) {
+                    alert(data.error);
+                    return;
+                }
+
+                state.currentFile = { filename, path, ...data };
+
+                document.getElementById('previewFileName').textContent = (path || '') + filename;
+                document.getElementById('previewFileSize').textContent = formatFileSize(data.size_bytes);
+                document.getElementById('previewFileVersion').textContent = `v${data.version} of ${data.current_version}`;
+                document.getElementById('previewFileUploader').textContent = `by ${data.uploaded_by}`;
+
+                const contentEl = document.getElementById('filePreviewContent');
+                if (data.encoding === 'text') {
+                    contentEl.innerHTML = `<pre class="file-preview-content">${esc(data.content)}</pre>`;
+                } else if (data.mime_type.startsWith('image/')) {
+                    contentEl.innerHTML = `<img class="file-preview-image" src="data:${data.mime_type};base64,${data.content}" alt="${filename}">`;
+                } else {
+                    contentEl.innerHTML = `<div class="file-preview-content">[Binary file - ${formatFileSize(data.size_bytes)}]</div>`;
+                }
+
+                // Load version selector
+                await loadVersions(filename, path);
+
+                document.getElementById('filePreviewModal').classList.add('active');
+            } catch (e) {
+                console.error('Failed to preview file', e);
+            }
+        }
+
+        async function loadVersions(filename, path) {
+            try {
+                const res = await fetch(`/api/files/${encodeURIComponent(filename)}/versions?squad_id=${state.squadId}&path=${encodeURIComponent(path)}`);
+                const data = await res.json();
+                if (data.success) {
+                    const select = document.getElementById('versionSelect');
+                    select.innerHTML = data.versions.map(v =>
+                        `<option value="${v.version}" ${v.version === state.currentFile.version ? 'selected' : ''}>
+                            v${v.version} - ${new Date(v.uploaded_at).toLocaleDateString()}
+                        </option>`
+                    ).join('');
+                }
+            } catch (e) {}
+        }
+
+        async function loadFileVersion() {
+            const version = parseInt(document.getElementById('versionSelect').value);
+            if (state.currentFile) {
+                await previewFile(state.currentFile.filename, state.currentFile.path);
+            }
+        }
+
+        function closeFilePreview() {
+            document.getElementById('filePreviewModal').classList.remove('active');
+            state.currentFile = null;
+        }
+
+        function downloadCurrentFile() {
+            if (!state.currentFile) return;
+            const { filename, path, version } = state.currentFile;
+            const url = `/api/files/${encodeURIComponent(filename)}/download?squad_id=${state.squadId}&path=${encodeURIComponent(path || '')}&version=${version}`;
+            window.open(url, '_blank');
+        }
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!state.myName) {
+                alert('Please join the squad first to upload files.');
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) {
+                alert('File size exceeds 10 MB limit.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const content = e.target.result.split(',')[1]; // Get base64 part
+                const isText = file.type.startsWith('text/') ||
+                    ['application/json', 'application/javascript', 'application/xml'].includes(file.type) ||
+                    file.name.match(/\.(md|txt|py|js|ts|json|html|css|sql|yaml|yml)$/i);
+
+                try {
+                    let fileContent = content;
+                    let encoding = 'base64';
+
+                    if (isText) {
+                        // Decode base64 to text for text files
+                        fileContent = atob(content);
+                        encoding = 'text';
+                    }
+
+                    const res = await fetch(`/api/files?squad_id=${state.squadId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            filename: file.name,
+                            content: fileContent,
+                            sender_name: state.myName,
+                            encoding: encoding,
+                            mime_type: file.type || undefined
+                        })
+                    });
+
+                    const data = await res.json();
+                    if (!data.success) {
+                        alert(data.error || 'Upload failed');
+                    } else {
+                        loadFiles();
+                    }
+                } catch (err) {
+                    alert('Upload failed: ' + err.message);
+                }
+            };
+            reader.readAsDataURL(file);
+            event.target.value = ''; // Reset input
+        }
+
+        // Drag and drop support
+        document.addEventListener('DOMContentLoaded', () => {
+            const dropZone = document.getElementById('uploadZone');
+            if (dropZone) {
+                dropZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add('dragover');
+                });
+                dropZone.addEventListener('dragleave', () => {
+                    dropZone.classList.remove('dragover');
+                });
+                dropZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('dragover');
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        document.getElementById('fileInput').files = files;
+                        handleFileUpload({ target: { files: [files[0]] } });
+                    }
+                });
+            }
+        });
+
+        function getModelClass(model) {
+            const m = (model || '').toLowerCase();
+            if (m.includes('claude')) return 'model-claude';
+            if (m.includes('gpt') || m.includes('chatgpt') || m.includes('openai')) return 'model-chatgpt';
+            if (m.includes('gemini') || m.includes('google')) return 'model-gemini';
+            if (m.includes('web')) return 'model-web';
+            return 'model-unknown';
+        }
+
+        function getInitials(name) {
+            return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+        }
+
+        function renderMembers() {
+            const el = document.getElementById('membersList');
+            if (!state.members.length) {
+                el.innerHTML = '<div class="empty-state">No one here yet.</div>';
+                return;
+            }
+            el.innerHTML = state.members.map(m => `
+                <div class="member-card ${getModelClass(m.model)}">
+                    <div class="member-avatar">${getInitials(m.name)}</div>
+                    <div class="member-info">
+                        <div class="member-name">${esc(m.name)}</div>
+                        <div class="member-model">${esc(m.model)}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('statusText').textContent =
+                `${state.members.length} member${state.members.length !== 1 ? 's' : ''} in squad`;
+        }
+
+        function renderMessages() {
+            const el = document.getElementById('messagesContainer');
+            el.innerHTML = state.messages.map(m => {
+                const isSystem = m.sender_type === 'system';
+                const isOrch = m.sender_type === 'orchestrator';
+                const extraClass = isSystem ? 'system-message' : (isOrch ? 'orchestrator-message' : '');
+                const time = new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+
+                if (isSystem) {
+                    return `<div class="message system-message">
+                        <div class="msg-body"><div class="msg-content">${formatContent(m.content)}</div></div>
+                    </div>`;
+                }
+
+                const badgeClass = `badge-${m.sender_type}`;
+                const avatarStyle = isOrch
+                    ? 'background: rgba(74, 222, 128, 0.15); color: var(--accent-green);'
+                    : m.sender_type === 'human'
+                        ? 'background: rgba(91, 138, 245, 0.15); color: var(--accent-blue);'
+                        : 'background: rgba(167, 139, 250, 0.15); color: var(--accent-purple);';
+
+                return `<div class="message ${extraClass}">
+                    <div class="msg-avatar" style="${avatarStyle}">
+                        ${isOrch ? '&lt;&gt;' : getInitials(m.sender_name)}
+                    </div>
+                    <div class="msg-body">
+                        <div class="msg-header">
+                            <span class="msg-sender">${esc(m.sender_name)}</span>
+                            <span class="msg-type-badge ${badgeClass}">${m.sender_type}</span>
+                            <span class="msg-time">${time}</span>
+                        </div>
+                        <div class="msg-content">${formatContent(m.content)}</div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function renderContext() {
+            const el = document.getElementById('contextEntries');
+            document.getElementById('contextVersion').textContent = `ctx v${state.context.version}`;
+
+            if (!state.context.entries.length) {
+                el.innerHTML = '<div class="empty-state">No context committed yet.<br>Propose commits as the squad reaches decisions.</div>';
+                return;
+            }
+
+            el.innerHTML = state.context.entries.map(e => `
+                <div class="context-entry">
+                    <div class="context-entry-version">v${e.version} - ${e.origin === 'orchestrator_detected' ? 'detected' : 'proposed'}</div>
+                    <div class="context-entry-content">${esc(e.content)}</div>
+                    <div class="context-entry-meta">by ${esc(e.committed_by)} - ${new Date(e.committed_at).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderPendingCommits() {
+            const el = document.getElementById('pendingCommits');
+            if (!state.pendingCommits.length) {
+                el.innerHTML = '<div class="empty-state">No pending proposals.</div>';
+                return;
+            }
+
+            el.innerHTML = state.pendingCommits.map(c => {
+                const s = c.vote_summary || {};
+                return `<div class="commit-card">
+                    <div class="commit-content">${esc(c.content)}</div>
+                    <div class="commit-proposer">Proposed by ${esc(c.proposed_by_name)}</div>
+                    <div class="commit-votes">
+                        <span class="vote-count approve">+ ${s.approvals || 0}</span>
+                        <span class="vote-count reject">- ${s.rejections || 0}</span>
+                        <span class="vote-count">~ ${s.abstentions || 0}</span>
+                    </div>
+                    ${state.myName ? `
+                    <div class="vote-actions">
+                        <button class="vote-btn approve" onclick="voteOnCommit('${c.id}', 'approve')">Approve</button>
+                        <button class="vote-btn reject" onclick="voteOnCommit('${c.id}', 'reject')">Reject</button>
+                    </div>` : ''}
+                </div>`;
+            }).join('');
+        }
+
+        // ── Utilities ───────────────────────────────────────────────
+
+        function esc(s) {
+            const d = document.createElement('div');
+            d.textContent = s || '';
+            return d.innerHTML;
+        }
+
+        function formatContent(content) {
+            return esc(content)
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/`(.*?)`/g, '<code style="font-family: JetBrains Mono, monospace; font-size: 12px; background: var(--bg-elevated); padding: 2px 6px; border-radius: 4px;">$1</code>');
+        }
+
+        function scrollToBottom() {
+            const el = document.getElementById('messagesContainer');
+            setTimeout(() => { el.scrollTop = el.scrollHeight; }, 50);
+        }
+
+        function updateConnectionStatus(connected) {
+            const el = document.getElementById('connStatus');
+            const dot = document.getElementById('statusDot');
+            if (connected) {
+                el.textContent = 'connected';
+                el.className = 'connection-status connected';
+                dot.style.background = 'var(--accent-green)';
+            } else {
+                el.textContent = 'reconnecting...';
+                el.className = 'connection-status disconnected';
+                dot.style.background = 'var(--accent-red)';
+            }
+        }
+
+        // Auto-resize textarea
+        document.getElementById('chatInput').addEventListener('input', function() {
+            this.style.height = '44px';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+
+        // ── Initialize ──────────────────────────────────────────────
+        async function init() {
+            // Check for OAuth errors first
+            checkOAuthError();
+
+            // Check if user is authenticated via OAuth cookie
+            const oauthAuth = await checkAuthStatus();
+            if (oauthAuth) {
+                showMainApp();
+                return;
+            }
+
+            // Check for existing enrollment key session
+            if (checkExistingSession()) {
+                showMainApp();
+                return;
+            }
+
+            // Show auth screen
+            document.getElementById('authScreen').classList.add('active');
+        }
+
+        init();
+    </script>
+</body>
+</html>
